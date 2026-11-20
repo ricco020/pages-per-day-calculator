@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pages per day calculator: reading plan for one book or a whole stack</title>
+<meta name="description" content="Free pages per day calculator: enter your books and their page counts, the page you are on, your deadline and the days you read. It gives the pages to read each reading day, the date you finish each book and the minutes per day at your own speed, with a dated plan you can export to your calendar (.ics) or a spreadsheet (CSV).">
+<style>
+:root{--ink:#1d1a24;--paper:#f3efe6;--navy:#23395b;--rust:#b2542b;--rule:#d8d0bd}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.6 Georgia,"Iowan Old Style",serif}
+main{max-width:860px;margin:0 auto;padding:36px 18px 60px}
+h1{font-size:1.9rem;line-height:1.15;margin:0 0 .4em;color:var(--navy)}
+h2{font-size:1.2rem;margin:1.8em 0 .5em;color:var(--navy)}
+a{color:var(--navy)}
+.box{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+label{font-size:.85rem;display:flex;flex-direction:column;gap:3px;min-width:0}
+input,select{font:inherit;padding:7px;border:1px solid var(--rule);border-radius:5px;background:#fff;width:100%;min-width:0}
+.bill{display:grid;grid-template-columns:3fr 1fr auto;gap:8px;align-items:end;padding:8px 0;border-bottom:1px dashed var(--rule)}
+.bill button{font:inherit;padding:7px 10px;border:1px solid var(--rule);border-radius:5px;background:#fff;cursor:pointer}
+@media(max-width:620px){.bill{grid-template-columns:1fr 1fr auto}.bill label:first-child{grid-column:1/-1}}
+.dl{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.dl button{font:inherit;font-weight:bold;padding:9px 14px;border:2px solid var(--navy);border-radius:6px;background:#fff;color:var(--navy);cursor:pointer}
+.dl button.main{background:var(--navy);color:#fff}
+.chk{flex-direction:row;align-items:center;gap:8px;font-size:.9rem}.chk input{width:auto}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+.sum div{background:#fff;border-top:4px solid var(--rust);padding:10px 14px;border-radius:4px}
+.sum b{display:block;font-size:1.2rem;color:var(--navy)}
+.warn{background:#fbe9e1;border-left:4px solid var(--rust);padding:8px 12px;border-radius:4px;margin:10px 0}
+.res{width:100%;border-collapse:collapse;background:#fff;font-size:.93rem}
+.res th,.res td{border-bottom:1px solid var(--rule);padding:6px 8px;text-align:left;vertical-align:top}
+.res td.d,.res td.n{white-space:nowrap}.res td.n{text-align:right}
+.res tr.g td{background:#eef3f8;font-weight:bold;color:var(--navy)}
+.tag{display:inline-block;font-size:.75rem;padding:0 6px;border-radius:3px;background:#fbe9e1;color:var(--rust);margin-left:4px}
+.scroll{overflow-x:auto}
+small{color:#5f5a66}
+@media(max-width:620px){.res{font-size:.85rem}.res th,.res td{padding:5px 4px}}
+@media print{.box,.dl,.noprint{display:none}body{background:#fff}}
+.days{display:flex;flex-wrap:wrap;gap:6px 14px;margin:4px 0 12px}.days label{flex-direction:row;align-items:center;gap:5px;font-size:.95rem}.days input{width:auto}
+</style>
+</head>
+<body>
+<main>
+<h1>Pages per day calculator</h1>
+<p>Dividing pages by days only works for one book read every single day. Put in the whole stack, the page you are on now, your deadline and the days you actually read: you get the pages for each reading day, the page to reach each evening, the date you finish each book and how many minutes a day that is at your speed. Fell behind? Change "page I am on" and the plan is recalculated from today.</p>
+<div class="box">
+<div id="bills"></div>
+<div class="dl"><button id="add" type="button">+ Add a book</button></div>
+<div class="row">
+<label>Page I am on in the first book<input id="p0" type="number" min="0" value="0" inputmode="numeric"></label>
+<label>Start reading on<input id="start" type="date"></label>
+<label>Finish by (included)<input id="end" type="date"></label>
+<label>My speed, pages per hour<input id="pph" type="number" min="1" max="300" value="30" inputmode="numeric"></label>
+</div>
+<b>Days I read</b>
+<div class="days" id="days"></div>
+<div class="dl"><button class="main" id="ics" type="button">Add to calendar (.ics)</button><button id="csv" type="button">Spreadsheet (CSV)</button><button id="prn" type="button">Print</button></div>
+<small>Calendar file: one all-day event per reading day with the pages and the page to reach. Nothing is sent anywhere, the page runs in your browser and keeps your list in this browser only.</small>
+</div>
+<div id="out"></div>
+<h2 class="noprint">How the plan is calculated</h2>
+<div class="noprint">
+<p>Pages left = all the books added up, minus the pages already read in the first one. They are spread evenly over your reading days between the start and the deadline: by the end of reading day k you have read pages left times k divided by the number of reading days, rounded up, so you are never behind and the last day ends exactly on the last page. A book is finished on the first reading day whose target passes its last page.</p>
+<p>Minutes per day use the speed you enter. 30 pages an hour is only a starting value: time yourself on 10 pages of the book you are reading, since dense non-fiction and small print go slower than a novel.</p>
+<p>Prefer to log it on paper? The <a href="https://tidysheets.shop/p/reading-log-printable">printable reading log</a> logs every book with dates and a rating, has a 52-book shelf to colour for a yearly goal, a quotes page and a daily reading minutes log a teacher can sign (US Letter and A4).</p>
+</div>
+</main>
+<script id="core">
+const DAY=86400000;
+const ymd=d=>d.toISOString().slice(0,10);
+const parse=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(Date.UTC(y,m-1,d))};
+// books [{title,pages}], p0 pages read in book 0, start/end Date (end included), wd = weekdays read (0=Sun..6=Sat)
+function readplan(books,p0,start,end,wd){const days=[];for(let t=start.getTime();t<=end.getTime();t+=DAY){const d=new Date(t);if(wd.includes(d.getUTCDay()))days.push(d)}
+ const total=books.reduce((s,b)=>s+b.pages,0);const R=Math.max(0,total-p0);const n=days.length;const out=[];const fin=books.map(()=>null);
+ const cumEnd=[];books.reduce((s,b,i)=>(cumEnd[i]=s+b.pages,cumEnd[i]),0);
+ let prev=0;for(let k=1;k<=n;k++){const c=Math.ceil(R*k/n);const abs=p0+c;let bi=cumEnd.findIndex(e=>e>=abs);if(bi<0)bi=books.length-1;const page=abs-(bi?cumEnd[bi-1]:0);
+  for(let j=0;j<books.length;j++)if(fin[j]===null&&cumEnd[j]<=abs&&cumEnd[j]>p0)fin[j]=days[k-1];
+  out.push({date:days[k-1],pages:c-prev,book:bi,page});prev=c}
+ return{days:out,n,R,fin}}
+</script>
+<script>
+const $=id=>document.getElementById(id);
+const nice=d=>d.toLocaleDateString('en-US',{timeZone:'UTC',weekday:'short',month:'short',day:'numeric',year:'numeric'});
+const DN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DEF=[['First book',320],['Second book',280],['Third book',410]];
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+function rowHTML(b){return `<div class="bill"><label>Book<input class="nm" value="${esc(b[0])}" maxlength="80"></label><label>Pages<input class="am" type="number" min="1" max="5000" value="${b[1]}" inputmode="numeric"></label><button type="button" class="rm" aria-label="Remove">✕</button></div>`}
+$('days').innerHTML=[1,2,3,4,5,6,0].map(i=>`<label><input type="checkbox" value="${i}" checked>${DN[i]}</label>`).join('');
+function load(){let s=null;try{s=JSON.parse(localStorage.getItem('readplan')||'null')}catch(e){}$('bills').innerHTML=(s&&Array.isArray(s.b)&&s.b.length?s.b:DEF).map(rowHTML).join('');if(s&&Array.isArray(s.d))document.querySelectorAll('#days input').forEach(c=>c.checked=s.d.includes(+c.value))}
+const read=()=>[...document.querySelectorAll('.bill')].map(r=>({title:r.querySelector('.nm').value.trim()||'Book',pages:Math.max(1,Math.min(5000,parseInt(r.querySelector('.am').value,10)||1))}));
+const wdays=()=>[...document.querySelectorAll('#days input')].filter(c=>c.checked).map(c=>+c.value);
+let last=null;
+function run(){const b=read(),wd=wdays();try{localStorage.setItem('readplan',JSON.stringify({b:b.map(x=>[x.title,x.pages]),d:wd}))}catch(e){}
+ if(!b.length||!$('start').value||!$('end').value){$('out').innerHTML='';last=null;return}
+ const s=parse($('start').value),e=parse($('end').value);const p0=Math.max(0,Math.min(b[0].pages,parseInt($('p0').value,10)||0));
+ if(e<s){$('out').innerHTML='<div class="warn">The deadline has to be on or after the start date.</div>';last=null;return}
+ const p=readplan(b,p0,s,e,wd);if(!p.n){$('out').innerHTML='<div class="warn">No reading day between those dates: tick at least one day.</div>';last=null;return}
+ last={p,b};const pph=Math.max(1,parseInt($('pph').value,10)||30);const mx=Math.max(...p.days.map(x=>x.pages));
+ let h=`<div class="sum"><div>Pages per reading day<b>${Math.ceil(p.R/p.n)}</b><small>${p.R} pages left over ${p.n} reading days</small></div><div>Time per reading day<b>${Math.round(Math.ceil(p.R/p.n)/pph*60)} min</b><small>at ${pph} pages an hour</small></div><div>Books finished<b>${p.fin.filter(Boolean).length} of ${b.length}</b><small>${b.map((x,i)=>p.fin[i]?esc(x.title)+': '+p.fin[i].toLocaleDateString('en-US',{timeZone:'UTC',month:'short',day:'numeric'}):'').filter(Boolean).join(', ')}</small></div></div>`;
+ if(mx/pph>2)h+=`<div class="warn">That is more than 2 hours a day at your speed: move the deadline, add reading days or drop a book.</div>`;
+ h+=`<div class="scroll"><table class="res"><tr><th>Date</th><th>Pages</th><th>Read up to</th></tr>`;
+ for(const x of p.days){const done=p.fin.findIndex(f=>f&&f.getTime()===x.date.getTime());h+=`<tr><td class="d">${nice(x.date)}</td><td class="n">${x.pages}</td><td>${esc(b[x.book].title)}, p. ${x.page}${p.fin.some((f,i)=>f&&f.getTime()===x.date.getTime())?'<span class="tag">finish '+p.fin.map((f,i)=>f&&f.getTime()===x.date.getTime()?esc(b[i].title):'').filter(Boolean).join(', ')+'</span>':''}</td></tr>`}
+ h+='</table></div>';$('out').innerHTML=h}
+function icsEsc(s){return s.replace(/\\/g,'\\\\').replace(/;/g,'\;').replace(/,/g,'\\,')}
+function fold(l){if(new TextEncoder().encode(l).length<=75)return l;const o=[];let s='',n=0;for(const ch of l){const k=new TextEncoder().encode(ch).length;if(n+k>(o.length?74:75)){o.push(s);s='';n=0}s+=ch;n+=k}o.push(s);return o.join('\r\n ')}
+function dl(txt,name,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;a.click()}
+$('ics').onclick=()=>{if(!last)return;const st=new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ricco020//pages-per-day//EN','CALSCALE:GREGORIAN','X-WR-CALNAME:Reading plan'];
+ for(const x of last.p.days){const d=ymd(x.date).replace(/-/g,''),e=ymd(new Date(x.date.getTime()+DAY)).replace(/-/g,'');L.push('BEGIN:VEVENT','UID:read-'+d+'@ricco020.github.io','DTSTAMP:'+st,'DTSTART;VALUE=DATE:'+d,'DTEND;VALUE=DATE:'+e,fold('SUMMARY:'+icsEsc('Read '+x.pages+' pages: '+last.b[x.book].title+' to p. '+x.page)),'TRANSP:TRANSPARENT','END:VEVENT')}
+ L.push('END:VCALENDAR');dl(L.join('\r\n')+'\r\n','reading-plan.ics','text/calendar')};
+$('csv').onclick=()=>{if(!last)return;const q=s=>'"'+String(s).replace(/"/g,'""')+'"';const L=['Date,Pages,Book,Read up to page,Done'];for(const x of last.p.days)L.push([ymd(x.date),x.pages,q(last.b[x.book].title),x.page,''].join(','));dl(L.join('\r\n'),'reading-plan.csv','text/csv')};
+$('prn').onclick=()=>window.print();
+$('add').onclick=()=>{$('bills').insertAdjacentHTML('beforeend',rowHTML(['',300]));run()};
+['bills','days'].forEach(id=>{$(id).addEventListener('input',run);$(id).addEventListener('change',run)});
+$('bills').addEventListener('click',e=>{if(e.target.classList.contains('rm')){e.target.closest('.bill').remove();run()}});
+['p0','start','end','pph'].forEach(i=>$(i).oninput=run);
+{const t=new Date(),T=new Date(Date.UTC(t.getFullYear(),t.getMonth(),t.getDate()));$('start').value=ymd(T);$('end').value=ymd(new Date(Date.UTC(T.getUTCFullYear(),11,31)))}
+load();run();
+</script>
+</body>
+</html>
